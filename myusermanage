@@ -168,12 +168,12 @@ EOF
 
         printf "%s\n" "Adding user ${1} to group $GROUP"
 
-        /usr/bin/sudo -r session_r -t session_t \
+        /bin/sudo -r session_r -t session_t \
             /sbin/usermod -a -G $GROUP ${1} || exit 192
 
         printf "%s\n" "Associating a password with user ${1}"
 
-        /usr/bin/sudo -r session_r -t session_t \
+        /bin/sudo -r session_r -t session_t \
             /bin/passwd ${1}
 
     elif [ "$#" == "2" -a "x$2" == "xremove" ] ; then
