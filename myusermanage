@@ -161,7 +161,7 @@ EOF
 
         printf "%s\n" "Adding user ${1} with group ${2}"
 
-        /usr/bin/sudo -r session_r -t session_t \
+        /bin/sudo -r session_r -t session_t \
             /sbin/useradd ${1} -u ${2} || exit 192
 
         /bin/grep "^${GROUP}:" /etc/group >/dev/null || exit 192
