@@ -1,0 +1,215 @@
+#!/bin/bash
+
+MYPOL="/etc/selinux/e145"
+MYSOURCE="${MYPOL}/source"
+MYCONTRIB="${MYSOURCE}/contrib"
+MYDEFCONTEXT="${MYPOL}/contexts/users"
+GROUP="guests"
+
+UIDMIN=1000
+UIDMAX=50000
+
+if [ "x$UID" == "x1000" -a "x$(/bin/secon -t)" == "xsession_t" ] ; then
+    if [ "$#" == "2" -a "x$2" != "xremove" ] ; then
+
+        test $2 -lt $UIDMIN && exit 192
+        test $2 -gt $UIDMAX && exit 192 
+
+        /bin/grep "^${1}:" /etc/passwd >/dev/null && exit 192
+        /bin/grep "^${1}:" /etc/group >/dev/null && exit 192
+
+        /bin/grep ":${2}:" /etc/passwd >/dev/null && exit 192
+        /bin/grep ":${2}:" /etc/group >/dev/null && exit 192
+
+        if [ -f "${MYCONTRIB}/${1}.cil" ] ; then
+            printf "%s\n" "ERR: file ${MYCONTRIB}/${1}.cil exists"
+            exit 192
+        fi
+
+        printf "%s\n" "Creating module ${MYCONTRIB}/${1}.cil"
+
+/bin/cat > ${MYCONTRIB}/${1}.cil <<EOF
+(user ${1}_u)
+(role ${1}_r)
+(type ${1}_t)
+(call usersubject_base_common_login_user_template (${1}_u ${1}_r ${1}_t (s0) (s0)
+    systemhigh))
+
+(context file_${1}_user_cache (${1}_u object_r user_cache_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.cache(/.*)?" any file_${1}_user_cache)
+
+(context file_${1}_user_font_cache (${1}_u object_r user_font_cache_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.cache/fontconfig(/.*)?" any file_${1}_user_font_cache)
+
+(context file_${1}_user_gstreamer_cache (${1}_u object_r user_gstreamer_cache_t
+    ((s0)(s0))))
+(filecon "/home/${1}/\.cache/gstreamer-1\.0(/.*)?" any
+    file_${1}_user_gstreamer_cache)
+
+(context file_${1}_user_conf (${1}_u object_r user_conf_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.config(/.*)?" any file_${1}_user_conf)
+
+(context file_${1}_user_gtk2_conf (${1}_u object_r user_gtk2_conf_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.config/gtk-2\.0(/.*)?" any file_${1}_user_gtk2_conf)
+
+(context file_${1}_user_data (${1}_u object_r user_data_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.local(/.*)?" any file_${1}_user_data)
+
+(context file_${1}_user_ssh_home (${1}_u object_r user_ssh_home_t ((s0)(s0))))
+(filecon "/home/${1}/\.ssh(/.*)?" any file_${1}_user_ssh_home)
+
+(context file_${1}_user_home (${1}_u object_r user_home_t ((s0)
+    (s0))))
+(filecon "/home/${1}/.*" any file_${1}_user_home)
+
+(context file_${1}_user_mozilla_home (${1}_u object_r user_mozilla_home_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.mozilla(/.*)?" any file_${1}_user_mozilla_home)
+
+(context file_${1}_user_systemd_home (${1}_u object_r user_systemd_home_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.config/systemd(/.*)?" any file_${1}_user_systemd_home)
+(filecon "/home/${1}/\.local/share/systemd(/.*)?" any file_${1}_user_systemd_home)
+
+(context file_${1}_user_bin (${1}_u object_r user_bin_t ((s0)
+    (s0))))
+(filecon "/home/${1}/bin" symlink file_${1}_user_bin)
+(filecon "/home/${1}/\.local/bin(/.*)?" any file_${1}_user_bin)
+
+(context file_${1}_user_cert (${1}_u object_r user_cert_t ((s0)
+    (s0))))
+(filecon "/home/${1}/\.pki(/.*)?" any file_${1}_user_cert)
+
+(context file_${1}_user_home_dir (${1}_u object_r user_home_dir_t ((s0)
+    mls_systemhigh)))
+(filecon "/home/${1}" dir file_${1}_user_home_dir)
+
+(context file_${1}_user_run_user_dir (${1}_u object_r user_run_user_dir_t ((s0)
+    mls_systemhigh)))
+(filecon "/run/user/${2}" dir file_${1}_user_run_user_dir)
+
+(context file_${1}_user_run (${1}_u object_r user_run_t ((s0)
+    (s0))))
+(filecon "/run/user/${2}/.*" any file_${1}_user_run)
+
+(context file_${1}_user_orc_run (${1}_u object_r user_orc_run_t ((s0)
+    (s0))))
+(filecon "/run/user/${2}/\.orc(/.*)?" any file_${1}_user_orc_run)
+
+(context file_${1}_user_systemd_run (${1}_u object_r user_systemd_run_t ((s0)
+    (s0))))
+(filecon "/run/user/${2}/systemd(/.*)?" any file_${1}_user_systemd_run)
+
+(context file_${1}_user_mail_spool (${1}_u object_r user_mail_spool_t ((s0)
+    mls_systemhigh)))
+(filecon "/var/spool/mail/${1}" file file_${1}_user_mail_spool)
+
+(context file_${1}_user_emacs_home (${1}_u object_r user_emacs_home_t ((s0)(s0))))
+(filecon "/home/${1}/\.emacs" file file_${1}_user_emacs_home)
+(filecon "/home/${1}/\.emacs\.d(/.*)?" any file_${1}_user_emacs_home)
+
+(call usersubject_var_spool_filetrans_mail_spool_files (useradd_t "${1}"))
+
+(optional ${1}_optional_logind
+    (call usersubject_run_user_root_filetrans_run_user_dir (logind_t "${2}")))
+
+(optional ${1}_optional_${1}_usermanage
+    (type ${1}_chfn_t)
+    (call usermanage_role_template_chfn (${1}_r ${1}_t ${1}_chfn_t))
+
+    (call usersubject_application_subject (${1}_chfn_t))
+
+    (type ${1}_passwd_t)
+    (call usermanage_role_template_passwd (${1}_r ${1}_t ${1}_passwd_t))
+
+    (call usersubject_application_subject (${1}_passwd_t)))
+EOF
+
+        if [ -f "${MYDEFCONTEXT}/${1}_u" ] ; then
+            printf "%s\n" "ERR: file ${MYDEFCONTEXT}/${1}_u exists"
+            exit 192
+        fi
+
+        printf "%s\n" "Configuring default contexts: ${MYDEFCONTEXT}/${1}_u"
+
+/bin/cat > ${MYDEFCONTEXT}/${1}_u <<EOF
+${1}_r:${1}_t ${1}_r:${1}_t
+system_r:sshd_t ${1}_r:${1}_t
+system_r:login_t ${1}_r:${1}_t
+EOF
+
+        /bin/grep "^${MYCONTRIB}/${1}.cil" ${MYSOURCE}/LISTING >/dev/null && exit 192
+
+        printf "%s\n" "Appending ${MYCONTRIB}/${1}.cil to ${MYSOURCE}/LISTING"
+
+        /bin/echo "contrib/${1}.cil" >> ${MYSOURCE}/LISTING || exit 192
+
+        /bin/grep "^${1}:" ${MYPOL}/seusers >/dev/null && exit 192
+
+        printf "%s\n" "Adding user mapping ${1}:${1}_u to ${MYPOL}/seusers"
+
+        echo "${1}:${1}_u" >> ${MYPOL}/seusers || exit 192
+
+        printf "%s\n" "Building, and loading updated policy"
+
+        /home/joe/.local/bin/e145 update || exit 192
+
+        printf "%s\n" "Adding user ${1} with group ${2}"
+
+        /usr/bin/sudo -r session_r -t session_t \
+            /sbin/useradd ${1} -u ${2} || exit 192
+
+        /bin/grep "^${GROUP}:" /etc/group >/dev/null || exit 192
+
+        printf "%s\n" "Adding user ${1} to group $GROUP"
+
+        /usr/bin/sudo -r session_r -t session_t \
+            /sbin/usermod -a -G $GROUP ${1} || exit 192
+
+        printf "%s\n" "Associating a password with user ${1}"
+
+        /usr/bin/sudo -r session_r -t session_t \
+            /bin/passwd ${1}
+
+    elif [ "$#" == "2" -a "x$2" == "xremove" ] ; then
+        printf "%s\n" "Removing user ${1}"
+
+        /bin/sudo /sbin/userdel -r ${1} || exit 192
+
+        printf "%s\n" "Removing ${MYCONTRIB}/${1}.cil"
+
+        test -f ${MYCONTRIB}/${1}.cil && /bin/rm -f ${MYCONTRIB}/${1}.cil || exit 192
+
+        printf "%s\n" "Removing ${MYDEFCONTEEXT}/${1}_u"
+
+        test -f ${MYDEFCONTEXT}/${1}_u && /bin/rm -f ${MYDEFCONTEXT}/${1}_u || exit 192
+
+        printf "%s\n" "Removing ${1}:${1}_u from ${MYPOL}/seusers"
+
+        /bin/sed -i "/^${1}:${1}_u/d" ${MYPOL}/seusers || exit 192
+
+        printf "%s\n" "Removing contrib/${1}.cil from ${MYSOURCE}/LISTING"
+
+        /bin/sed -i "/^contrib\/${1}.cil/d" ${MYSOURCE}/LISTING || exit 192
+
+        printf "%s\n" "Building, and loading updated policy"
+
+        /home/joe/.local/bin/e145 update || exit 192
+
+    else
+        printf "%s\n" "ERR: needs two parameters: user name, user id/remove"
+        exit 192
+    fi
+
+else
+    printf "%s\n" "ERR: needs to runs as joe/session_t"
+    exit 192
+fi
+
+exit 0
+#EOF
