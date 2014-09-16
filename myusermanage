@@ -185,7 +185,7 @@ EOF
 
         test -f ${MYCONTRIB}/${1}.cil && /bin/rm -f ${MYCONTRIB}/${1}.cil || exit 192
 
-        printf "%s\n" "Removing ${MYDEFCONTEEXT}/${1}_u"
+        printf "%s\n" "Removing ${MYDEFCONTEXT}/${1}_u"
 
         test -f ${MYDEFCONTEXT}/${1}_u && /bin/rm -f ${MYDEFCONTEXT}/${1}_u || exit 192
 
