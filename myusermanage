@@ -179,7 +179,7 @@ EOF
     elif [ "$#" == "2" -a "x$2" == "xremove" ] ; then
         printf "%s\n" "Removing user ${1}"
 
-        /bin/sudo /sbin/userdel -r ${1} || exit 192
+        /bin/sudo /sbin/userdel -r ${1}
 
         printf "%s\n" "Removing ${MYCONTRIB}/${1}.cil"
 
