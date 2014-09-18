@@ -60,9 +60,6 @@ if [ "x$UID" == "x1000" -a "x$(/bin/secon -t)" == "xsession_t" ] ; then
     (s0))))
 (filecon "/home/${1}/\.local(/.*)?" any file_${1}_user_data)
 
-(context file_${1}_user_ssh_home (${1}_u object_r user_ssh_home_t ((s0)(s0))))
-(filecon "/home/${1}/\.ssh(/.*)?" any file_${1}_user_ssh_home)
-
 (context file_${1}_user_home (${1}_u object_r user_home_t ((s0)
     (s0))))
 (filecon "/home/${1}/.*" any file_${1}_user_home)
